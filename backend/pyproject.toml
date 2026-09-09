@@ -1,0 +1,59 @@
+[project]
+name = "deep-research"
+version = "0.1.0"
+description = "Bounded deep research workflow powered by HelloAgents."
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "hello-agents==0.2.9",
+    "python-dotenv==1.0.1",
+    "tavily-python>=0.5.0",
+    "ddgs>=9.6.1",
+    "google-search-results>=2.4.2",
+    # HelloAgents imports its evaluation modules during package initialization.
+    "huggingface-hub>=1.24.0",
+]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["deep_research*"]
+
+[project.optional-dependencies]
+dev = [
+    "httpx>=0.27.0",
+    "ruff>=0.12.7",
+    "mypy>=1.11.1",
+]
+
+[tool.ruff]
+lint.select = [
+    "E",
+    "F",
+    "I",
+    "D",
+    "D401",
+    "T201",
+    "UP",
+]
+lint.ignore = [
+    "UP006",
+    "UP007",
+    "UP035",
+    "D417",
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "UP"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
