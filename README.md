@@ -1,129 +1,125 @@
-# Deep Research
+# Deep Research 智能深度研究系统
 
-独立的 FastAPI + Vue 3 深度研究应用。后端负责规划、检索、摘要、证据审核、
-补充检索与报告生成；前端通过 POST SSE 显示过程和结果。
+输入一个研究主题，系统会自动拆解任务、联网检索资料、整理摘要、
+审核证据，并生成带来源引用的 Markdown 报告。
 
-## 目录
+基于 Python、HelloAgents、FastAPI、Vue 3 和 TypeScript 开发，
+通过 SSE 向页面推送研究进度。
 
-```text
-deep-research/
-├── backend/
-│   ├── src/deep_research/
-│   │   ├── main.py              FastAPI 应用入口
-│   │   ├── api.py               HTTP / SSE 路由及请求校验
-│   │   ├── factory.py           为每次请求组装研究流程
-│   │   ├── serialization.py     任务和证据的传输格式
-│   │   ├── loop.py              研究核心循环
-│   │   ├── models.py            任务、来源和审核结果
-│   │   ├── ports.py             流程接口
-│   │   ├── helloagents_adapters.py
-│   │   ├── fake_adapters.py     测试适配器
-│   │   └── config.py            配置与执行限制
-│   ├── tests/
-│   ├── .env                    本机模型及搜索配置
-│   ├── .env.example
-│   ├── pyproject.toml
-│   └── uv.lock
-├── frontend/
-│   ├── src/research-v2/         Vue 页面、事件类型、状态和请求处理
-│   ├── tests/
-│   ├── index.html              默认新版首页
-│   ├── v2.html                 同一页面的兼容入口
-│   ├── package.json
-│   └── vite.config.ts
-└── README.md
-```
+## 主要功能
 
-原目标目录的 `src/`、Python 项目配置和 `.env` 已移入 `backend/`。
-Python 包统一命名为 `deep_research`。已移除 `cli.py` 和
-`pyproject.toml` 中的 CLI 命令注册；通过 FastAPI 启动研究。
-源项目没有改动，也没有复制旧版 Agent 或旧版 Vue 页面。
+- **任务规划**：将问题拆分为研究子任务，生成检索语句和验收项。
+- **并行检索**：同时执行独立子任务，收集并按链接去重网络来源。
+- **证据审核**：结合模型判断与程序校验，检查来源相关性、可信度和验收项覆盖情况。
+- **补充搜索**：证据不足时调整查询继续检索，通过尝试次数和步骤上限控制执行范围。
+- **进度展示**：查看任务阶段、来源内容、审核结果和补充检索历史。
+- **报告生成**：根据通过审核的来源生成报告，附带引用编号与来源链接，支持下载 Markdown 文件。
 
-## 启动
+## 安装与配置
 
-后端终端：
+准备 Git、[uv](https://docs.astral.sh/uv/getting-started/installation/) 和
+[Node.js 24](https://nodejs.org/)（含 npm）。以下命令以 PowerShell 为例。
 
-后端通过 `backend/.python-version` 固定使用 Python 3.13，避免旧依赖
-在 Python 3.14 上缺少预编译包的问题。uv 会按此文件选择解释器。
+### 1. 下载项目
 
 ```powershell
-cd E:\code\deep-research\backend
-uv sync --extra dev
-uv run python -X utf8 -m uvicorn deep_research.main:app --app-dir src --reload --port 8000
+git clone https://github.com/superchai111222/deep-research-agent.git
+cd deep-research-agent
 ```
 
-原有 `.env` 已原样迁到 `backend/.env`。模型配置使用
-`LLM_PROVIDER`、`LLM_MODEL_ID`、`LLM_API_KEY`、`LLM_BASE_URL`；
-搜索配置使用 `SEARCH_API` 和相应服务密钥。
-`RESEARCH_*` 控制任务数、尝试次数和并发限制。
-Windows 使用 `-X utf8`，避免第三方工具输出状态符号时编码失败。
+如果已有项目文件，直接进入项目根目录即可。
 
-前端终端：
+### 2. 安装后端依赖
 
-```powershell
-cd E:\code\deep-research\frontend
-npm install
+```
+cd backend
+uv python install 3.13
+uv sync --locked --extra dev
+```
+
+uv 根据项目的依赖清单和锁文件自动创建 `backend/.venv/`，
+无需另外创建或手动激活虚拟环境。
+
+### 3. 配置模型和搜索服务
+
+在同一个终端执行：
+
+```
+if (!(Test-Path -LiteralPath .env)) {
+    Copy-Item -LiteralPath .env_example -Destination .env
+}
+```
+
+编辑 `backend/.env`，填写自己的配置：
+
+```dotenv
+LLM_PROVIDER=custom
+LLM_MODEL_ID=your-model-name
+LLM_API_KEY=your-api-key-here
+LLM_BASE_URL=https://your-api-host.example/v1
+
+SEARCH_API=duckduckgo
+```
+
+- `LLM_MODEL_ID`：模型服务商提供的模型名称。
+- `LLM_API_KEY`：自己的模型服务密钥。
+- `LLM_BASE_URL`：模型服务商提供的 OpenAI 兼容接口地址。
+- `SEARCH_API`：搜索服务，默认 DuckDuckGo 无需密钥；使用 Tavily、SerpApi 等服务时，需要填写对应密钥。
+
+搜索服务api，Tavily、SerpApi去官网申请账号即可，有免费额度。
+
+其他配置见 `backend/.env_example`，包括本地模型地址、任务数、
+尝试次数和并发限制。`.env.example` 也提供相同示例。
+示例中的模型名称、地址和密钥是占位值，需要替换；真实 `.env` 不提交到 Git。
+
+## 启动与使用
+
+### 1. 启动后端
+
+在 `backend/` 目录执行：
+
+```uv run --locked python -X utf8 -m uvicorn deep_research.main:app --app-dir src --reload --port 8000
+```
+
+后端启动后等待研究请求。
+接口文档：[http://localhost:8000/docs](http://localhost:8000/docs)。
+
+### 2. 启动前端
+
+另开一个终端，从项目根目录执行：
+
+```cd frontend
+npm ci
 npm run dev
 ```
 
-打开 [研究页面](http://localhost:5174/)。
-[API 文档](http://localhost:8000/docs) 可查看接口及请求格式。
-前端也支持 [v2.html](http://localhost:5174/v2.html)。
+打开 [http://localhost:5174/](http://localhost:5174/)。
+后续启动只需运行后端启动命令和 `npm run dev`，无需每次安装依赖。
 
-前端默认连接 `http://localhost:8000`。若端口改变，在
-`frontend/.env.local` 中设置 `VITE_API_BASE_URL=http://localhost:新端口`，
-然后重启 Vite；生产环境也需要在构建前设置此变量。
+### 3. 开始研究
 
-## 接口与行为
+1. 输入主题，例如“比较 PostgreSQL 和 MySQL 在高并发订单系统中的选型”。
+2. 选择搜索引擎，或沿用后端配置。
+3. 点击“开始研究”，查看任务列表和实时进度。
+4. 选择任务，查看验收项、来源内容、摘要和审核历史。
+5. 报告生成后，可在页面阅读或点击“下载 Markdown”。
 
-| 方法 | 路径 | 用途 |
-| --- | --- | --- |
-| GET | /healthz | 健康检查 |
-| POST | /research/v2 | 完整报告及结构化任务 |
-| POST | /research/v2/stream | 阶段事件与最终报告的 SSE 流 |
+运行时保持两个终端开启，分别按 `Ctrl+C` 可停止前后端服务。
 
-迁移保留原 v2 路径，前后端协议一致。两个 POST 接口都接收：
+## 使用说明
 
-```json
-{"topic":"比较 PostgreSQL 和 MySQL 的事务能力","search_api":"tavily"}
+- 主题尽量明确，可以指定时间范围、比较对象和关注维度。
+- 摘要和报告在对应阶段完成后整体展示，不是逐字输出。
+- 达到执行上限后，部分任务可能标记为未完成；报告应结合证据缺口阅读。
+- 来源审核不能保证事实绝对准确，重要结论应进一步核对原始资料。
+- “停止接收”只断开页面的进度接收，后端已发出的模型或搜索请求可能继续执行。
+- 页面刷新后不会恢复之前的研究进度，请及时下载报告。
+
+如果后端地址改变，在 `frontend/.env.local` 中设置：
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-`search_api` 可省略，沿用后端配置。浏览器仅提交研究主题和搜索选项，
-模型密钥保留在后端。每次请求创建独立的研究状态。
-
-页面显示任务进度、验收项、来源相关性与可信度、检索审核历史和报告下载。
-摘要和报告在阶段完成时整体更新。部分任务未完成会明确标记；
-“停止接收”只断开前端接收，后端已发出的模型或搜索请求可能继续。
-
-## 验证
-
-后端测试使用模拟适配器，不调用真实模型和搜索服务：
-
-```powershell
-cd E:\code\deep-research\backend
-uv run --extra dev python -X utf8 -m unittest discover -s tests -v
-```
-
-前端测试要求 Node.js 24：
-
-```powershell
-cd E:\code\deep-research\frontend
-npm test
-npm run build
-```
-
-无需外部服务的本地页面联调，可用以下命令代替正式后端：
-
-```powershell
-cd E:\code\deep-research\backend
-uv run python -X utf8 tests/serve_research_v2_demo.py --port 8000
-```
-
-模拟接口使用真实 FastAPI 路由和测试适配器，返回 `example.test` 来源。
-这只用于验证页面，不代表真实研究结果。正式后端不会自动使用模拟数据。
-
-可选浏览器测试：启动模拟后端和 Vite 后，在 frontend 执行
-`node tests/research-v2.browser.mjs`。需要可用的 Playwright；
-`PLAYWRIGHT_MODULE` 可指定其 `index.mjs` 的绝对路径，
-`BROWSER_EXECUTABLE` 可指定 Chromium 路径，
-`FRONTEND_URL` 默认 `http://127.0.0.1:5174`。
+将地址改为实际后端地址后重启前端；生产构建前也需设置正确地址。
+可参考 `frontend/.env.example`，前端配置中不要填写模型或搜索服务密钥。

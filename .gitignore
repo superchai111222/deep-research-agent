@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env_example
 .venv/
 __pycache__/
 *.py[cod]
