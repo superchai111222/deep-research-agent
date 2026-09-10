@@ -18,11 +18,11 @@
 ## 安装与配置
 
 准备 Git、[uv](https://docs.astral.sh/uv/getting-started/installation/) 和
-[Node.js 24](https://nodejs.org/)（含 npm）。以下命令以 PowerShell 为例。
+[Node.js 24](https://nodejs.org/)（含 npm）。
 
 ### 1. 下载项目
 
-```powershell
+```shell
 git clone https://github.com/superchai111222/deep-research-agent.git
 cd deep-research-agent
 ```
@@ -31,7 +31,7 @@ cd deep-research-agent
 
 ### 2. 安装后端依赖
 
-```
+```shell
 cd backend
 uv python install 3.13
 uv sync --locked --extra dev
@@ -42,15 +42,8 @@ uv 根据项目的依赖清单和锁文件自动创建 `backend/.venv/`，
 
 ### 3. 配置模型和搜索服务
 
-在同一个终端执行：
-
-```
-if (!(Test-Path -LiteralPath .env)) {
-    Copy-Item -LiteralPath .env_example -Destination .env
-}
-```
-
-编辑 `backend/.env`，填写自己的配置：
+将 `backend/.env_example` 复制一份并命名为 `.env`，放在同一目录；
+已有 `.env` 则直接编辑。填写模型和搜索配置：
 
 ```dotenv
 LLM_PROVIDER=custom
@@ -66,7 +59,7 @@ SEARCH_API=duckduckgo
 - `LLM_BASE_URL`：模型服务商提供的 OpenAI 兼容接口地址。
 - `SEARCH_API`：搜索服务，默认 DuckDuckGo 无需密钥；使用 Tavily、SerpApi 等服务时，需要填写对应密钥。
 
-搜索服务api，Tavily、SerpApi去官网申请账号即可，有免费额度。
+Tavily、SerpApi 的 API 密钥可在各自官网注册申请，额度以官网说明为准。
 
 其他配置见 `backend/.env_example`，包括本地模型地址、任务数、
 尝试次数和并发限制。`.env.example` 也提供相同示例。
@@ -78,7 +71,8 @@ SEARCH_API=duckduckgo
 
 在 `backend/` 目录执行：
 
-```uv run --locked python -X utf8 -m uvicorn deep_research.main:app --app-dir src --reload --port 8000
+```shell
+uv run --locked python -X utf8 -m uvicorn deep_research.main:app --app-dir src --reload --port 8000
 ```
 
 后端启动后等待研究请求。
@@ -88,7 +82,8 @@ SEARCH_API=duckduckgo
 
 另开一个终端，从项目根目录执行：
 
-```cd frontend
+```shell
+cd frontend
 npm ci
 npm run dev
 ```
